@@ -8,6 +8,7 @@ import (
 	"github.com/wizzy-design/book-corner-api/internal/config"
 	"github.com/wizzy-design/book-corner-api/internal/database"
 	"github.com/wizzy-design/book-corner-api/internal/handlers"
+	"github.com/wizzy-design/book-corner-api/migrations"
 )
 
 func main() {
@@ -31,6 +32,12 @@ func main() {
 	// Cleans up pool connection when main function exits
 	defer pool.Close()
 
+	// Execute migrations when server starts up
+	if err := database.Migrate(pool, migrations.FS); err != nil {
+		log.Fatal("Failed to run database migrations:", err)
+	}
+
+	// Start http server
 	var router *gin.Engine = gin.Default()
 	router.SetTrustedProxies(nil)
 
