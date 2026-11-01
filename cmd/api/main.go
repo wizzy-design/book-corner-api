@@ -18,7 +18,7 @@ func main() {
 
 	// Close program if no env variables exist
 	if err != nil {
-		log.Fatal("Failed to load configuratyion:", err)
+		log.Fatal("Failed to load configuration:", err)
 	}
 
 	// Setup database connection pool
