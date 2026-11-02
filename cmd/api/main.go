@@ -43,6 +43,8 @@ func main() {
 
 	// Smoke test
 	router.GET("/health", handlers.HealthCheck(pool))
+	router.GET("/books", handlers.GetBooksHandler(pool))
+	router.GET("/books/:id", handlers.GetBookByIDHandler(pool))
 
 	// Tell router to listen on the port:
 	router.Run(":" + cfg.Port)
