@@ -8,7 +8,7 @@ import (
 	"github.com/wizzy-design/book-corner-api/internal/models"
 )
 
-func GetAllPublishedBooks(pool *pgxpool.Pool)([]models.Book, error){
+func GetAllPublishedBooks(pool *pgxpool.Pool, filter models.BookFilter)([]models.Book, int, error){
 	var ctx context.Context
 	var cancel context.CancelFunc
 
@@ -16,16 +16,62 @@ func GetAllPublishedBooks(pool *pgxpool.Pool)([]models.Book, error){
 	ctx, cancel = context.WithTimeout(context.Background(), 5*time.Second) 
 	defer cancel()
 
-	var query string = `
-		SELECT id, title, author, description, price, stock, image_url, status, created_at, updated_at
-		FROM books
-		WHERE status = $1
+	// Total matching published books for pagination
+	var countQuery string = `
+		SELECT COUNT(*) -- COUNT is a built-in SQL function that counts how many rows match the WHERE filter
+		FROM books b
+		WHERE b.status = 'published'
+		AND ($1 = '' 
+			OR b.search @@ websearch_to_tsquery('english', $1) 
+			OR b.title ILIKE '%' || $1 || '%' 
+			OR b.author ILIKE '%' || $1 || '%'
+		) -- "Does this book's search column match the user's search words?"
+		AND ($2 = '' OR EXISTS (
+			SELECT 1 FROM book_tags bt
+			INNER JOIN tags t ON t.id = bt.tag_id
+			WHERE bt.book_id = b.id AND LOWER(t.name) = LOWER($2) AND t.kind = 'genre'
+		))
+		AND ($3 = '' OR EXISTS(
+			SELECT 1 FROM book_tags bt
+			INNER JOIN tags t ON t.id = bt.tag_id
+			WHERE bt.book_id = b.id AND LOWER(t.name) = LOWER($3)
+		))
 	`
 
-	var rows, err = pool.Query(ctx, query, "published")
-
+	var total int
+	var err error = pool.QueryRow(ctx, countQuery, filter.Query, filter.Genre, filter.Tag).Scan(&total)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
+	}
+
+	// Fetch paginated books, ranked by search relevance when query is present
+	var offset int = (filter.Page - 1) * filter.Limit
+
+	var query string = `
+		SELECT b.id, b.title, b.author, b.description, b.price, b.stock, b.image_url, b.status, b.created_at, b.updated_at
+		FROM books b
+		WHERE b.status = 'published'
+			AND ($1 = '' OR b.search @@ websearch_to_tsquery('english', $1) OR b.title ILIKE '%' || $1 || '%' 
+			OR b.author ILIKE '%' || $1 || '%')
+			AND ($2 = '' OR EXISTS(
+				SELECT 1 FROM book_tags bt
+				INNER JOIN tags t ON t.id = bt.tag_id
+				WHERE bt.book_id = b.id AND LOWER(t.name) = LOWER($2) AND t.kind = 'genre'
+			))
+			AND ($3 = '' OR EXISTS(
+				SELECT 1 FROM book_tags bt
+				INNER JOIN tags t ON t.id = bt.tag_id
+				WHERE bt.book_id = b.id AND LOWER(t.name) = lower($3)
+			))
+			ORDER BY CASE WHEN $1 <> '' THEN ts_rank(b.search, websearch_to_tsquery('english', $1)) ELSE 0 END DESC,
+			b.created_at DESC
+			LIMIT $4 OFFSET $5
+	`
+
+	var rows, queryErr = pool.Query(ctx, query, filter.Query, filter.Genre, filter.Tag, filter.Limit, offset)
+
+	if queryErr != nil {
+		return nil, 0, queryErr
 	}
 
 	defer rows.Close()
@@ -49,17 +95,17 @@ func GetAllPublishedBooks(pool *pgxpool.Pool)([]models.Book, error){
 		)
 
 		if err != nil {
-			return nil, err
+			return nil, 0, err
 		}
 
 		books = append(books, book)
 	}
 
 	if err = rows.Err(); err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
-	return books, nil
+	return books, total, nil
 }
 
 func GetBookByID (pool *pgxpool.Pool, id int) (*models.Book, error) {

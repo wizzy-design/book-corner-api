@@ -21,3 +21,11 @@ type Book struct {
 	UpdatedAt   time.Time `json:"updated_at" db:"updated_at"`
 	Tags []Tag `json:"tags,omitempty"`
 }
+
+type BookFilter struct {
+	Query string
+	Genre string
+	Tag string
+	Page int
+	Limit int
+}
