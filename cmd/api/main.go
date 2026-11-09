@@ -8,6 +8,7 @@ import (
 	"github.com/wizzy-design/book-corner-api/internal/config"
 	"github.com/wizzy-design/book-corner-api/internal/database"
 	"github.com/wizzy-design/book-corner-api/internal/handlers"
+	"github.com/wizzy-design/book-corner-api/internal/middleware"
 	"github.com/wizzy-design/book-corner-api/migrations"
 )
 
@@ -40,6 +41,9 @@ func main() {
 	// Start http server
 	var router *gin.Engine = gin.Default()
 	router.SetTrustedProxies(nil)
+
+	// Middleware
+	router.Use(middleware.CORSMiddleware(cfg.AllowedOrigin))
 
 	// Smoke test
 	router.GET("/health", handlers.HealthCheck(pool))
