@@ -170,3 +170,92 @@ func GetBookByID (pool *pgxpool.Pool, id int) (*models.Book, error) {
 
 	return &book, nil
 }
+
+func GetAllBooks(pool *pgxpool.Pool, filter models.BookFilter) ([]models.Book, int, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	// 1. Total matching books (counting drafts & published)
+	countQuery := `
+		SELECT COUNT(*)
+		FROM books b
+		WHERE ($1 = '' OR b.status = $1)
+		AND ($2 = '' 
+			OR b.search @@ websearch_to_tsquery('english', $2) 
+			OR b.title ILIKE '%' || $2 || '%' 
+			OR b.author ILIKE '%' || $2 || '%'
+		)
+		AND ($3 = '' OR EXISTS (
+			SELECT 1 FROM book_tags bt
+			INNER JOIN tags t ON t.id = bt.tag_id
+			WHERE bt.book_id = b.id AND LOWER(t.name) = LOWER($3) AND t.kind = 'genre'
+		))
+		AND ($4 = '' OR EXISTS (
+			SELECT 1 FROM book_tags bt
+			INNER JOIN tags t ON t.id = bt.tag_id
+			WHERE bt.book_id = b.id AND LOWER(t.name) = LOWER($4)
+		))
+	`
+
+	var total int
+	err := pool.QueryRow(ctx, countQuery, filter.Status, filter.Query, filter.Genre, filter.Tag).Scan(&total)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	// 2. Fetch paginated books
+	offset := (filter.Page - 1) * filter.Limit
+
+	query := `
+		SELECT b.id, b.title, b.author, b.description, b.price, b.stock, b.image_url, b.status, b.created_at, b.updated_at
+		FROM books b
+		WHERE ($1 = '' OR b.status = $1)
+			AND ($2 = '' OR b.search @@ websearch_to_tsquery('english', $2) OR b.title ILIKE '%' || $2 || '%' OR b.author ILIKE '%' || $2 || '%')
+			AND ($3 = '' OR EXISTS(
+				SELECT 1 FROM book_tags bt
+				INNER JOIN tags t ON t.id = bt.tag_id
+				WHERE bt.book_id = b.id AND LOWER(t.name) = LOWER($3) AND t.kind = 'genre'
+			))
+			AND ($4 = '' OR EXISTS(
+				SELECT 1 FROM book_tags bt
+				INNER JOIN tags t ON t.id = bt.tag_id
+				WHERE bt.book_id = b.id AND LOWER(t.name) = LOWER($4)
+			))
+		ORDER BY CASE WHEN $2 <> '' THEN ts_rank(b.search, websearch_to_tsquery('english', $2)) ELSE 0 END DESC,
+			b.created_at DESC
+		LIMIT $5 OFFSET $6
+	`
+
+	rows, err := pool.Query(ctx, query, filter.Status, filter.Query, filter.Genre, filter.Tag, filter.Limit, offset)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer rows.Close()
+
+	books := []models.Book{}
+	for rows.Next() {
+		var book models.Book
+		err = rows.Scan(
+			&book.ID,
+			&book.Title,
+			&book.Author,
+			&book.Description,
+			&book.Price,
+			&book.Stock,
+			&book.ImageUrl,
+			&book.Status,
+			&book.CreatedAt,
+			&book.UpdatedAt,
+		)
+		if err != nil {
+			return nil, 0, err
+		}
+		books = append(books, book)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, 0, err
+	}
+
+	return books, total, nil
+}

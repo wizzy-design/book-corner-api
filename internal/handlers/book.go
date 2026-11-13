@@ -100,3 +100,47 @@ func GetBookByIDHandler(pool *pgxpool.Pool) gin.HandlerFunc {
 		})
 	}
 }
+
+func GetAdminBooksHandler(pool *pgxpool.Pool) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		page, err := strconv.Atoi(c.DefaultQuery("page", "1"))
+		if err != nil || page < 1 {
+			page = 1
+		}
+
+		limit, err := strconv.Atoi(c.DefaultQuery("limit", "12"))
+		if err != nil || limit < 1 {
+			limit = 12
+		}
+		if limit > 50 {
+			limit = 50
+		}
+
+		filter := models.BookFilter{
+			Query:  c.Query("query"),
+			Genre:  c.Query("genre"),
+			Tag:    c.Query("tag"),
+			Status: c.Query("status"),
+			Page:   page,
+			Limit:  limit,
+		}
+
+		books, total, err := repository.GetAllBooks(pool, filter)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error": gin.H{
+					"code":    "internal_error",
+					"message": "Failed to fetch books",
+				},
+			})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{
+			"data":  books,
+			"page":  filter.Page,
+			"limit": filter.Limit,
+			"total": total,
+		})
+	}
+}

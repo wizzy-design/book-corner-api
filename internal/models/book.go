@@ -26,6 +26,7 @@ type BookFilter struct {
 	Query string
 	Genre string
 	Tag string
+	Status string
 	Page int
 	Limit int
 }

@@ -45,13 +45,18 @@ func main() {
 	// Middleware
 	router.Use(middleware.CORSMiddleware(cfg.AllowedOrigin))
 
-	// Smoke test
+	// Public routes
 	router.GET("/health", handlers.HealthCheck(pool))
-
 	router.GET("/books", handlers.GetBooksHandler(pool))
 	router.GET("/books/:id", handlers.GetBookByIDHandler(pool))
 
-	// Admin login
+	// Protected admin routes
+	admin := router.Group("/admin")
+	admin.Use(middleware.AuthMiddleware(cfg.JWTSecret))
+	{
+		// Checkpoint route: verifies auth works
+		admin.GET("/books", handlers.GetAdminBooksHandler(pool))
+	}
 	router.POST("/admin/login", handlers.AdminLoginHandler(pool, cfg.JWTSecret))
 
 	// Tell router to listen on the port:
