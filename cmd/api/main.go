@@ -47,8 +47,12 @@ func main() {
 
 	// Smoke test
 	router.GET("/health", handlers.HealthCheck(pool))
+
 	router.GET("/books", handlers.GetBooksHandler(pool))
 	router.GET("/books/:id", handlers.GetBookByIDHandler(pool))
+
+	// Admin login
+	router.POST("/admin/login", handlers.AdminLoginHandler(pool, cfg.JWTSecret))
 
 	// Tell router to listen on the port:
 	router.Run(":" + cfg.Port)

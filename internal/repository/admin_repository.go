@@ -31,3 +31,28 @@ func CreateAdmin(pool *pgxpool.Pool, email, passwordHash string) (models.Admin, 
 
 	return admin, nil
 }
+
+func GetAdminByEmail(pool *pgxpool.Pool, email string) (models.Admin, error){
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	query := `
+		SELECT id, email, password_hash, created_at
+		FROM admins
+		WHERE LOWER(email) = LOWER($1)
+	`
+
+	var admin models.Admin
+	err := pool.QueryRow(ctx, query, email).Scan(
+		&admin.ID,
+		&admin.Email,
+		&admin.PasswordHash,
+		&admin.CreatedAt,
+	)
+
+	if err != nil{
+		return models.Admin{}, err
+	}
+
+	return admin, nil
+}
