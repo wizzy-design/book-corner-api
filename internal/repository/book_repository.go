@@ -259,3 +259,92 @@ func GetAllBooks(pool *pgxpool.Pool, filter models.BookFilter) ([]models.Book, i
 
 	return books, total, nil
 }
+
+func CreateBook(pool *pgxpool.Pool, book models.Book, tagIDs []int) (*models.Book, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	/* 
+		transaction (pool.Begin) is used here so that inserting the book
+		into books and linking its tag_ids in book_tags happen together. 
+		If inserting tags fails, the book is rolled back automatically.
+	*/
+	transaction, err := pool.Begin(ctx)
+	if err != nil {
+		return nil, err
+	}
+	defer transaction.Rollback(ctx)
+
+	bookQuery := `
+		INSERT INTO books (title, author, description, price, stock, image_url, status)
+		VALUES ($1, $2, $3, $4, $5, $6, $7)
+		RETURNING id, title, author, description, price, stock, image_url, status, created_at, updated_at
+	`
+
+	var created models.Book
+	err = transaction.QueryRow(ctx, bookQuery, 
+		book.Title,
+		book.Author,
+		book.Description,
+		book.Price,
+		book.Stock,
+		book.ImageUrl,
+		book.Status,
+	).Scan(
+		&created.ID,
+		&created.Title,
+		&created.Author,
+		&created.Description,
+		&created.Price,
+		&created.Stock,
+		&created.ImageUrl,
+		&created.Status,
+		&created.CreatedAt,
+		&created.UpdatedAt,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	// link tags in book_tags
+	created.Tags = []models.Tag{}
+	for _, tagID := range tagIDs {
+		_, err := transaction.Exec(ctx, `
+			INSERT INTO book_tags (book_id, tag_id)
+			VALUES ($1, $2)
+			ON CONFLICT DO NOTHING
+		`, created.ID, tagID)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	// 3. Fetch full tag objects to populate in the returned book
+	if len(tagIDs) > 0 {
+		tagRows, err := transaction.Query(ctx, `
+			SELECT t.id, t.name, t.kind
+			FROM tags t
+			INNER JOIN book_tags bt ON bt.tag_id = t.id
+			WHERE bt.book_id = $1
+		`, created.ID)
+		if err != nil {
+			return nil, err
+		}
+		defer tagRows.Close()
+
+		for tagRows.Next() {
+			var tag models.Tag
+			if err := tagRows.Scan(&tag.ID, &tag.Name, &tag.Kind);
+			err != nil {
+				return nil, err
+			}
+			created.Tags = append(created.Tags, tag)
+		}
+	}
+
+	if err := transaction.Commit(ctx); err != nil {
+		return nil, err
+	}
+
+	return &created, nil
+}

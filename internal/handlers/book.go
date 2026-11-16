@@ -144,3 +144,48 @@ func GetAdminBooksHandler(pool *pgxpool.Pool) gin.HandlerFunc {
 		})
 	}
 }
+
+func CreateBookHandler(pool *pgxpool.Pool) gin.HandlerFunc {
+	return func(c *gin.Context){
+		var req models.CreateBookRequest
+		if err := c.ShouldBindJSON(&req); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error": gin.H{
+					"code": "validation_failed",
+					"message": "Invalid book details: title, author, description, price, and stock are required",
+				},
+			})
+			return
+		}
+
+		status := req.Status
+		if status == "" {
+			status = "draft"
+		}
+
+		book := models.Book{
+			Title: req.Title,
+			Author: req.Author,
+			Description: req.Description,
+			Price: req.Price,
+			Stock: *req.Stock,
+			ImageUrl: req.ImageUrl,
+			Status: status,
+		}
+
+		createdBook, err := repository.CreateBook(pool, book, req.TagIDs)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error": gin.H{
+					"code": "internal_error",
+					"message": "Failed to create book",
+				},
+			})
+			return
+		}
+
+		c.JSON(http.StatusCreated, gin.H{
+			"data": createdBook,
+		})
+	}
+}

@@ -54,8 +54,10 @@ func main() {
 	admin := router.Group("/admin")
 	admin.Use(middleware.AuthMiddleware(cfg.JWTSecret))
 	{
-		// Checkpoint route: verifies auth works
 		admin.GET("/books", handlers.GetAdminBooksHandler(pool))
+		admin.GET("/books/lookup", handlers.BookLookupHandler())
+		admin.POST("books", handlers.CreateBookHandler(pool))
+
 	}
 	router.POST("/admin/login", handlers.AdminLoginHandler(pool, cfg.JWTSecret))
 
