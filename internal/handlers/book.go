@@ -189,3 +189,69 @@ func CreateBookHandler(pool *pgxpool.Pool) gin.HandlerFunc {
 		})
 	}
 }
+
+func UpdateBookHandler(pool *pgxpool.Pool) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		id, err := strconv.Atoi(c.Param("id"))
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error": gin.H{
+					"code": "invalid_id",
+					"message": "Invalid book ID",
+				},
+			})
+			return
+		}
+
+		var req models.CreateBookRequest
+		if err := c.ShouldBindJSON(&req); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error": gin.H{
+					"code": "validation_failed",
+					"message": "Invalid book details: title, author, description, price, and stock are required",
+				},
+			})
+			return
+		}
+
+		status := req.Status
+		if status == "" {
+			status = "draft"
+		}
+
+		book := models.Book{
+			Title: req.Title,
+			Author: req.Author,
+			Description: req.Description,
+			Price: req.Price,
+			Stock: *req.Stock,
+			ImageUrl: req.ImageUrl,
+			Status: status,
+		}
+
+		updatedBook, err := repository.UpdateBook(pool, id, book, req.TagIDs)
+		if errors.Is(err, pgx.ErrNoRows) {
+			c.JSON(http.StatusNotFound, gin.H{
+				"error": gin.H{
+					"code": "not_found",
+					"message": "Book not found",
+				},
+			})
+			return
+		}
+
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error": gin.H{
+					"code": "internal_error",
+					"message": "Failed to update book",
+				},
+			})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{
+			"data": updatedBook,
+		})
+	}
+}

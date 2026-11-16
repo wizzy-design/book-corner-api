@@ -348,3 +348,95 @@ func CreateBook(pool *pgxpool.Pool, book models.Book, tagIDs []int) (*models.Boo
 
 	return &created, nil
 }
+
+func UpdateBook(pool *pgxpool.Pool, id int, book models.Book, tagIDs []int) (*models.Book, error){
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	tx, err := pool.Begin(ctx)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback(ctx)
+
+	// Update book details
+	query := `
+		UPDATE books
+		SET title = $1, author = $2, description = $3, price = $4, stock = $5, image_url = $6, status = $7, updated_at = CURRENT_TIMESTAMP
+		WHERE id = $8
+		RETURNING id, title, author, description, price, stock, image_url, status, created_at, updated_at
+	`
+
+	var updated models.Book
+	err = tx.QueryRow(ctx, query, 
+		book.Title,
+		book.Author,
+		book.Description,
+		book.Price,
+		book.Stock,
+		book.ImageUrl,
+		book.Status,
+		id,
+	).Scan(
+		&updated.ID,
+		&updated.Title,
+		&updated.Author,
+		&updated.Description,
+		&updated.Price,
+		&updated.Stock,
+		&updated.ImageUrl,
+		&updated.Status,
+		&updated.CreatedAt,
+		&updated.UpdatedAt,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	// Replace old tags, insert new ones
+	_, err = tx.Exec(ctx, `DELETE FROM book_tags WHERE book_id = $1`, id)
+	if err != nil {
+		return nil, err
+	}
+
+	updated.Tags = []models.Tag{}
+	for _, tagID := range tagIDs {
+		_, err := tx.Exec(ctx, `
+			INSERT INTO books_tags (book_id, tag_id)
+			VALUES ($1, $2)
+			ON CONFLICT DO NOTHING
+		`, id, tagID)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	// Query the refreshed tags for the response
+	if len(tagIDs) > 0 {
+		tagRows, err := tx.Query(ctx, `
+			SELECT t.id, t.name, t.kind
+			FROM tags t
+			INNER JOIN book_tags bt ON bt.tag_id = t.id
+			WHERE bt.book_id = $1
+		`, id)
+		if err != nil {
+			return nil, err
+		}
+		defer tagRows.Close()
+
+		for tagRows.Next() {
+			var tag models.Tag
+			if err := tagRows.Scan(&tag.ID, &tag.Name, &tag.Kind);
+			err != nil {
+				return nil, err
+			}
+			updated.Tags = append(updated.Tags, tag)
+		}
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return nil, err
+	}
+
+	return &updated, nil
+}
