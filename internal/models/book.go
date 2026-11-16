@@ -49,3 +49,7 @@ type CreateBookRequest struct {
 	Status      string `json:"status" binding:"omitempty,oneof=draft published"`
 	TagIDs      []int  `json:"tag_ids"`
 }
+
+type UpdateBookStatusRequest struct {
+	Status string `json:"status" binding:"required,oneof=draft published"`
+}

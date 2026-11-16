@@ -57,6 +57,9 @@ func main() {
 		admin.GET("/books", handlers.GetAdminBooksHandler(pool))
 		admin.GET("/books/lookup", handlers.BookLookupHandler())
 		admin.POST("/books", handlers.CreateBookHandler(pool))
+		admin.PUT("/books/:id", handlers.UpdateBookHandler(pool))
+		admin.DELETE("/books/:id", handlers.DeleteBookHandler(pool))
+		admin.PATCH("/books/:id/status", handlers.UpdateBookStatusHandler(pool))
 
 	}
 	router.POST("/admin/login", handlers.AdminLoginHandler(pool, cfg.JWTSecret))

@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/wizzy-design/book-corner-api/internal/models"
 )
@@ -439,4 +440,43 @@ func UpdateBook(pool *pgxpool.Pool, id int, book models.Book, tagIDs []int) (*mo
 	}
 
 	return &updated, nil
+}
+
+func DeleteBook(pool *pgxpool.Pool, id int) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	cmdTag, err := pool.Exec(ctx, `DELETE FROM books WHERE id = $1`, id)
+	if err != nil {
+		return err
+	}
+
+	// If no rows were affected, the book ID didn't exist
+	if cmdTag.RowsAffected() == 0 {
+		return pgx.ErrNoRows
+	}
+
+	return nil
+}
+
+func UpdateBookStatus(pool *pgxpool.Pool, id int, status string) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	query := `
+		UPDATE books
+		SET status = $1, updated_at = CURRENT_TIMESTAMP
+		WHERE id = $2
+	`
+
+	cmdTag, err := pool.Exec(ctx, query, status, id)
+	if err != nil {
+		return err
+	}
+
+	if cmdTag.RowsAffected() == 0 {
+		return pgx.ErrNoRows
+	}
+
+	return nil
 }

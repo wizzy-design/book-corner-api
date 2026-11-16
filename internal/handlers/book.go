@@ -255,3 +255,97 @@ func UpdateBookHandler(pool *pgxpool.Pool) gin.HandlerFunc {
 		})
 	}
 }
+
+func DeleteBookHandler(pool *pgxpool.Pool) gin.HandlerFunc {
+	return func(c *gin.Context){
+		id, err := strconv.Atoi(c.Param("id"))
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error": gin.H{
+					"code": "invalid_id",
+					"message": "Invalid book ID",
+				},
+			})
+			return
+		}
+
+		err = repository.DeleteBook(pool, id)
+		if errors.Is(err, pgx.ErrNoRows){
+			c.JSON(http.StatusNotFound, gin.H{
+				"error": gin.H{
+					"code": "not_found",
+					"message": "Book not found",
+				},
+			})
+			return
+		}
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error": gin.H{
+					"code": "internal_error",
+					"message": "Failed to delete book",
+				},
+			})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{
+			"message": "Book deleted successfully",
+		})
+	}
+}
+
+func UpdateBookStatusHandler(pool *pgxpool.Pool) gin.HandlerFunc {
+	return func(c *gin.Context){
+		id, err := strconv.Atoi(c.Param("id"))
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error": gin.H{
+					"code": "invalid_id",
+					"message": "Invalid book ID",
+				},
+			})
+			return
+		}
+
+		var req models.UpdateBookStatusRequest
+		if err := c.ShouldBindJSON(&req); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error": gin.H{
+					"code": "validation_failed",
+					"message": "Status is required and must be either 'draft' or 'published'",
+				},
+			})
+			return
+		}
+
+		err = repository.UpdateBookStatus(pool, id, req.Status)
+		if errors.Is(err, pgx.ErrNoRows) {
+			c.JSON(http.StatusNotFound, gin.H{
+				"error": gin.H{
+					"code":    "not_found",
+					"message": "Book not found",
+				},
+			})
+			return
+		}
+
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error": gin.H{
+					"code": "internal_error",
+					"message": "Failed to update book status",
+				},
+			})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{
+			"message": "Book status updated successfully",
+			"data": gin.H{
+				"id": id,
+				"status": req.Status,
+			},
+		})
+	}
+}
