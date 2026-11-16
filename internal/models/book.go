@@ -5,7 +5,6 @@ import "time"
 type Tag struct {
 	ID int `json:"id" db:"id"`
 	Name string `json:"name" db:"name"`
-	Kind string `json:"kind" db:"kind"`
 }
 
 type Book struct {

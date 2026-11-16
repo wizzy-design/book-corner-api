@@ -30,7 +30,7 @@ func GetAllPublishedBooks(pool *pgxpool.Pool, filter models.BookFilter)([]models
 		AND ($2 = '' OR EXISTS (
 			SELECT 1 FROM book_tags bt
 			INNER JOIN tags t ON t.id = bt.tag_id
-			WHERE bt.book_id = b.id AND LOWER(t.name) = LOWER($2) AND t.kind = 'genre'
+			WHERE bt.book_id = b.id AND LOWER(t.name) = LOWER($2)
 		))
 		AND ($3 = '' OR EXISTS(
 			SELECT 1 FROM book_tags bt
@@ -57,7 +57,7 @@ func GetAllPublishedBooks(pool *pgxpool.Pool, filter models.BookFilter)([]models
 			AND ($2 = '' OR EXISTS(
 				SELECT 1 FROM book_tags bt
 				INNER JOIN tags t ON t.id = bt.tag_id
-				WHERE bt.book_id = b.id AND LOWER(t.name) = LOWER($2) AND t.kind = 'genre'
+				WHERE bt.book_id = b.id AND LOWER(t.name) = LOWER($2)
 			))
 			AND ($3 = '' OR EXISTS(
 				SELECT 1 FROM book_tags bt
@@ -142,7 +142,7 @@ func GetBookByID (pool *pgxpool.Pool, id int) (*models.Book, error) {
 
 	// connects the tags table to the book_tags table by matching their tag IDs.
 	var tagQuery string = `
-		SELECT t.id, t.name, t.kind
+		SELECT t.id, t.name
 		FROM tags t
 		INNER JOIN book_tags bt ON t.id = bt.tag_id
 		WHERE bt.book_id = $1
@@ -158,7 +158,7 @@ func GetBookByID (pool *pgxpool.Pool, id int) (*models.Book, error) {
 
 	for rows.Next(){
 		var tag models.Tag
-		if err = rows.Scan(&tag.ID, &tag.Name, &tag.Kind); err != nil {
+		if err = rows.Scan(&tag.ID, &tag.Name); err != nil {
 			return nil, err
 		}
 
@@ -189,7 +189,7 @@ func GetAllBooks(pool *pgxpool.Pool, filter models.BookFilter) ([]models.Book, i
 		AND ($3 = '' OR EXISTS (
 			SELECT 1 FROM book_tags bt
 			INNER JOIN tags t ON t.id = bt.tag_id
-			WHERE bt.book_id = b.id AND LOWER(t.name) = LOWER($3) AND t.kind = 'genre'
+			WHERE bt.book_id = b.id AND LOWER(t.name) = LOWER($3)
 		))
 		AND ($4 = '' OR EXISTS (
 			SELECT 1 FROM book_tags bt
@@ -215,7 +215,7 @@ func GetAllBooks(pool *pgxpool.Pool, filter models.BookFilter) ([]models.Book, i
 			AND ($3 = '' OR EXISTS(
 				SELECT 1 FROM book_tags bt
 				INNER JOIN tags t ON t.id = bt.tag_id
-				WHERE bt.book_id = b.id AND LOWER(t.name) = LOWER($3) AND t.kind = 'genre'
+				WHERE bt.book_id = b.id AND LOWER(t.name) = LOWER($3)
 			))
 			AND ($4 = '' OR EXISTS(
 				SELECT 1 FROM book_tags bt
@@ -323,7 +323,7 @@ func CreateBook(pool *pgxpool.Pool, book models.Book, tagIDs []int) (*models.Boo
 	// 3. Fetch full tag objects to populate in the returned book
 	if len(tagIDs) > 0 {
 		tagRows, err := transaction.Query(ctx, `
-			SELECT t.id, t.name, t.kind
+			SELECT t.id, t.name
 			FROM tags t
 			INNER JOIN book_tags bt ON bt.tag_id = t.id
 			WHERE bt.book_id = $1
@@ -335,7 +335,7 @@ func CreateBook(pool *pgxpool.Pool, book models.Book, tagIDs []int) (*models.Boo
 
 		for tagRows.Next() {
 			var tag models.Tag
-			if err := tagRows.Scan(&tag.ID, &tag.Name, &tag.Kind);
+			if err := tagRows.Scan(&tag.ID, &tag.Name);
 			err != nil {
 				return nil, err
 			}
@@ -415,7 +415,7 @@ func UpdateBook(pool *pgxpool.Pool, id int, book models.Book, tagIDs []int) (*mo
 	// Query the refreshed tags for the response
 	if len(tagIDs) > 0 {
 		tagRows, err := tx.Query(ctx, `
-			SELECT t.id, t.name, t.kind
+			SELECT t.id, t.name
 			FROM tags t
 			INNER JOIN book_tags bt ON bt.tag_id = t.id
 			WHERE bt.book_id = $1
@@ -427,7 +427,7 @@ func UpdateBook(pool *pgxpool.Pool, id int, book models.Book, tagIDs []int) (*mo
 
 		for tagRows.Next() {
 			var tag models.Tag
-			if err := tagRows.Scan(&tag.ID, &tag.Name, &tag.Kind);
+			if err := tagRows.Scan(&tag.ID, &tag.Name);
 			err != nil {
 				return nil, err
 			}
@@ -446,6 +446,8 @@ func DeleteBook(pool *pgxpool.Pool, id int) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
+	// cmdTag (CommandTag) contains Postgres command result metadata (e.g. "DELETE 1").
+	// RowsAffected() tells us if any row actually matched the ID.
 	cmdTag, err := pool.Exec(ctx, `DELETE FROM books WHERE id = $1`, id)
 	if err != nil {
 		return err
@@ -469,6 +471,8 @@ func UpdateBookStatus(pool *pgxpool.Pool, id int, status string) error {
 		WHERE id = $2
 	`
 
+	// cmdTag (CommandTag) contains Postgres command result metadata (e.g. "UPDATE 1").
+	// RowsAffected() tells us if any row actually matched the ID.
 	cmdTag, err := pool.Exec(ctx, query, status, id)
 	if err != nil {
 		return err
