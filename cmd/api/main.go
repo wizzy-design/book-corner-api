@@ -49,6 +49,7 @@ func main() {
 	router.GET("/health", handlers.HealthCheck(pool))
 	router.GET("/books", handlers.GetBooksHandler(pool))
 	router.GET("/books/:id", handlers.GetBookByIDHandler(pool))
+	router.GET("/tags", handlers.GetTagsHandler(pool))
 
 	// Protected admin routes
 	admin := router.Group("/admin")
@@ -60,7 +61,8 @@ func main() {
 		admin.PUT("/books/:id", handlers.UpdateBookHandler(pool))
 		admin.DELETE("/books/:id", handlers.DeleteBookHandler(pool))
 		admin.PATCH("/books/:id/status", handlers.UpdateBookStatusHandler(pool))
-
+		admin.POST("/tags", handlers.CreateTagHandler(pool))
+		admin.PUT("/books/:id/tags", handlers.ReplaceBookTagsHandler(pool))
 	}
 	router.POST("/admin/login", handlers.AdminLoginHandler(pool, cfg.JWTSecret))
 
