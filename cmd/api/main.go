@@ -50,6 +50,7 @@ func main() {
 	router.GET("/books", handlers.GetBooksHandler(pool))
 	router.GET("/books/:id", handlers.GetBookByIDHandler(pool))
 	router.GET("/tags", handlers.GetTagsHandler(pool))
+	router.GET("/quiz/questions", handlers.GetQuizQuestionsHandler(pool))
 
 	// Protected admin routes
 	admin := router.Group("/admin")
