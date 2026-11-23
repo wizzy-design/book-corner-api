@@ -2,7 +2,7 @@
 	"info": {
 		"_postman_id": "a90df1b3-4f9e-4e89-b9d1-872f2323a678",
 		"name": "Book Corner API",
-		"description": "Complete collection for Book Corner REST API including public storefront and admin endpoints.",
+		"description": "Complete collection for Book Corner REST API including public storefront and admin endpoints with example responses.",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
 	"variable": [
@@ -31,7 +31,28 @@
 							"host": ["{{base_url}}"],
 							"path": ["health"]
 						}
-					}
+					},
+					"response": [
+						{
+							"name": "Health Check - Success",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/health",
+									"host": ["{{base_url}}"],
+									"path": ["health"]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{ "key": "Content-Type", "value": "application/json; charset=utf-8" }
+							],
+							"body": "{\n  \"status\": \"available\",\n  \"database\": \"connected\"\n}"
+						}
+					]
 				},
 				{
 					"name": "List Books (Published)",
@@ -43,14 +64,35 @@
 							"host": ["{{base_url}}"],
 							"path": ["books"],
 							"query": [
-								{ "key": "query", "value": "", "description": "Full-text search" },
-								{ "key": "genre", "value": "", "description": "Tag filter" },
-								{ "key": "tag", "value": "", "description": "Tag filter" },
-								{ "key": "page", "value": "1" },
-								{ "key": "limit", "value": "12" }
+								{ "key": "query", "value": "", "description": "Full-text search matching title, author, description" },
+								{ "key": "genre", "value": "", "description": "Filter by tag name (e.g. Crime)" },
+								{ "key": "tag", "value": "", "description": "Filter by tag name" },
+								{ "key": "page", "value": "1", "description": "Page number" },
+								{ "key": "limit", "value": "12", "description": "Items per page (max 50)" }
 							]
 						}
-					}
+					},
+					"response": [
+						{
+							"name": "List Books - Success",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/books?page=1&limit=12",
+									"host": ["{{base_url}}"],
+									"path": ["books"]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{ "key": "Content-Type", "value": "application/json; charset=utf-8" }
+							],
+							"body": "{\n  \"data\": [\n    {\n      \"id\": 1,\n      \"title\": \"Let It Bleed\",\n      \"author\": \"Ian Rankin\",\n      \"description\": \"Detective Inspector John Rebus investigates a string of seemingly unrelated tragedies...\",\n      \"price\": 3000,\n      \"stock\": 5,\n      \"image_url\": \"https://covers.openlibrary.org/b/isbn/9780752877198-L.jpg\",\n      \"status\": \"published\",\n      \"created_at\": \"2026-11-09T08:20:00Z\",\n      \"updated_at\": \"2026-11-23T19:45:00Z\",\n      \"tags\": [\n        {\n          \"id\": 1,\n          \"name\": \"Crime\"\n        },\n        {\n          \"id\": 2,\n          \"name\": \"Mystery\"\n        }\n      ]\n    }\n  ],\n  \"page\": 1,\n  \"limit\": 12,\n  \"total\": 1\n}"
+						}
+					]
 				},
 				{
 					"name": "Get Book by ID",
@@ -62,7 +104,47 @@
 							"host": ["{{base_url}}"],
 							"path": ["books", "1"]
 						}
-					}
+					},
+					"response": [
+						{
+							"name": "Get Book by ID - Success",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/books/1",
+									"host": ["{{base_url}}"],
+									"path": ["books", "1"]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{ "key": "Content-Type", "value": "application/json; charset=utf-8" }
+							],
+							"body": "{\n  \"data\": {\n    \"id\": 1,\n    \"title\": \"Let It Bleed\",\n    \"author\": \"Ian Rankin\",\n    \"description\": \"Detective Inspector John Rebus investigates...\",\n    \"price\": 3000,\n    \"stock\": 5,\n    \"image_url\": \"https://covers.openlibrary.org/b/isbn/9780752877198-L.jpg\",\n    \"status\": \"published\",\n    \"created_at\": \"2026-11-09T08:20:00Z\",\n    \"updated_at\": \"2026-11-23T19:45:00Z\",\n    \"tags\": [\n      {\n        \"id\": 1,\n        \"name\": \"Crime\"\n      }\n    ]\n  }\n}"
+						},
+						{
+							"name": "Get Book by ID - Not Found",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/books/999",
+									"host": ["{{base_url}}"],
+									"path": ["books", "999"]
+								}
+							},
+							"status": "Not Found",
+							"code": 404,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{ "key": "Content-Type", "value": "application/json; charset=utf-8" }
+							],
+							"body": "{\n  \"error\": {\n    \"code\": \"not_found\",\n    \"message\": \"Book not found\"\n  }\n}"
+						}
+					]
 				},
 				{
 					"name": "List Tags",
@@ -74,7 +156,28 @@
 							"host": ["{{base_url}}"],
 							"path": ["tags"]
 						}
-					}
+					},
+					"response": [
+						{
+							"name": "List Tags - Success",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/tags",
+									"host": ["{{base_url}}"],
+									"path": ["tags"]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{ "key": "Content-Type", "value": "application/json; charset=utf-8" }
+							],
+							"body": "{\n  \"data\": [\n    { \"id\": 1, \"name\": \"Crime\" },\n    { \"id\": 2, \"name\": \"Mystery\" },\n    { \"id\": 3, \"name\": \"Thriller\" }\n  ]\n}"
+						}
+					]
 				},
 				{
 					"name": "Get Quiz Questions",
@@ -86,7 +189,28 @@
 							"host": ["{{base_url}}"],
 							"path": ["quiz", "questions"]
 						}
-					}
+					},
+					"response": [
+						{
+							"name": "Get Quiz Questions - Success",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/quiz/questions",
+									"host": ["{{base_url}}"],
+									"path": ["quiz", "questions"]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{ "key": "Content-Type", "value": "application/json; charset=utf-8" }
+							],
+							"body": "{\n  \"data\": [\n    {\n      \"id\": 1,\n      \"prompt\": \"What kind of vibe are you looking for in your next read?\",\n      \"position\": 1,\n      \"options\": [\n        {\n          \"id\": 1,\n          \"question_id\": 1,\n          \"label\": \"Dark, gritty, and mysterious\"\n        },\n        {\n          \"id\": 2,\n          \"question_id\": 1,\n          \"label\": \"Fast-paced adrenaline and action\"\n        }\n      ]\n    }\n  ]\n}"
+						}
+					]
 				},
 				{
 					"name": "Recommend Books (Quiz)",
@@ -104,7 +228,34 @@
 							"host": ["{{base_url}}"],
 							"path": ["quiz", "recommend"]
 						}
-					}
+					},
+					"response": [
+						{
+							"name": "Recommend Books - Success",
+							"originalRequest": {
+								"method": "POST",
+								"header": [
+									{ "key": "Content-Type", "value": "application/json" }
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"answers\": [\n    { \"question_id\": 1, \"option_id\": 1 },\n    { \"question_id\": 2, \"option_id\": 4 }\n  ]\n}"
+								},
+								"url": {
+									"raw": "{{base_url}}/quiz/recommend",
+									"host": ["{{base_url}}"],
+									"path": ["quiz", "recommend"]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{ "key": "Content-Type", "value": "application/json; charset=utf-8" }
+							],
+							"body": "{\n  \"data\": [\n    {\n      \"id\": 1,\n      \"title\": \"Let It Bleed\",\n      \"author\": \"Ian Rankin\",\n      \"description\": \"Detective Inspector John Rebus investigates...\",\n      \"price\": 3000,\n      \"stock\": 5,\n      \"image_url\": \"https://covers.openlibrary.org/b/isbn/9780752877198-L.jpg\",\n      \"status\": \"published\",\n      \"tags\": [\n        { \"id\": 1, \"name\": \"Crime\" }\n      ]\n    }\n  ]\n}"
+						}
+					]
 				},
 				{
 					"name": "Place Order (Pay on Delivery)",
@@ -122,7 +273,59 @@
 							"host": ["{{base_url}}"],
 							"path": ["orders"]
 						}
-					}
+					},
+					"response": [
+						{
+							"name": "Place Order - Success",
+							"originalRequest": {
+								"method": "POST",
+								"header": [
+									{ "key": "Content-Type", "value": "application/json" }
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"customer_name\": \"Amaka Obi\",\n  \"phone\": \"+2348012345678\",\n  \"email\": \"amaka@example.com\",\n  \"address\": \"14 Broad Street, Lagos Island\",\n  \"note\": \"Please call before delivery\",\n  \"payment_method\": \"pay_on_delivery\",\n  \"items\": [\n    {\n      \"book_id\": 1,\n      \"quantity\": 1\n    }\n  ]\n}"
+								},
+								"url": {
+									"raw": "{{base_url}}/orders",
+									"host": ["{{base_url}}"],
+									"path": ["orders"]
+								}
+							},
+							"status": "Created",
+							"code": 201,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{ "key": "Content-Type", "value": "application/json; charset=utf-8" }
+							],
+							"body": "{\n  \"data\": {\n    \"id\": 1,\n    \"customer_name\": \"Amaka Obi\",\n    \"phone\": \"+2348012345678\",\n    \"email\": \"amaka@example.com\",\n    \"address\": \"14 Broad Street, Lagos Island\",\n    \"note\": \"Please call before delivery\",\n    \"status\": \"pending\",\n    \"payment_status\": \"pending\",\n    \"payment_method\": \"pay_on_delivery\",\n    \"total\": 3000,\n    \"created_at\": \"2026-11-23T20:45:00Z\",\n    \"items\": [\n      {\n        \"id\": 1,\n        \"order_id\": 1,\n        \"book_id\": 1,\n        \"book_title\": \"Let It Bleed\",\n        \"quantity\": 1,\n        \"unit_price\": 3000\n      }\n    ]\n  }\n}"
+						},
+						{
+							"name": "Place Order - Insufficient Stock",
+							"originalRequest": {
+								"method": "POST",
+								"header": [
+									{ "key": "Content-Type", "value": "application/json" }
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"customer_name\": \"Amaka Obi\",\n  \"phone\": \"+2348012345678\",\n  \"address\": \"14 Broad Street\",\n  \"payment_method\": \"pay_on_delivery\",\n  \"items\": [{ \"book_id\": 1, \"quantity\": 999 }]\n}"
+								},
+								"url": {
+									"raw": "{{base_url}}/orders",
+									"host": ["{{base_url}}"],
+									"path": ["orders"]
+								}
+							},
+							"status": "Bad Request",
+							"code": 400,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{ "key": "Content-Type", "value": "application/json; charset=utf-8" }
+							],
+							"body": "{\n  \"error\": {\n    \"code\": \"insufficient_stock\",\n    \"message\": \"insufficient stock: 'Let It Bleed' (only 5 left)\"\n  }\n}"
+						}
+					]
 				}
 			]
 		},
@@ -145,7 +348,34 @@
 							"host": ["{{base_url}}"],
 							"path": ["admin", "login"]
 						}
-					}
+					},
+					"response": [
+						{
+							"name": "Admin Login - Success",
+							"originalRequest": {
+								"method": "POST",
+								"header": [
+									{ "key": "Content-Type", "value": "application/json" }
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"email\": \"admin@bookcorner.com\",\n  \"password\": \"yourpassword\"\n}"
+								},
+								"url": {
+									"raw": "{{base_url}}/admin/login",
+									"host": ["{{base_url}}"],
+									"path": ["admin", "login"]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{ "key": "Content-Type", "value": "application/json; charset=utf-8" }
+							],
+							"body": "{\n  \"token\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwiZXhwIjoxNzk4MDk1NjAwfQ...\"\n}"
+						}
+					]
 				},
 				{
 					"name": "List All Books (Admin)",
@@ -163,7 +393,30 @@
 								{ "key": "limit", "value": "12" }
 							]
 						}
-					}
+					},
+					"response": [
+						{
+							"name": "List All Books - Success",
+							"originalRequest": {
+								"method": "GET",
+								"header": [
+									{ "key": "Authorization", "value": "Bearer {{admin_token}}" }
+								],
+								"url": {
+									"raw": "{{base_url}}/admin/books?page=1&limit=12",
+									"host": ["{{base_url}}"],
+									"path": ["admin", "books"]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{ "key": "Content-Type", "value": "application/json; charset=utf-8" }
+							],
+							"body": "{\n  \"data\": [\n    {\n      \"id\": 1,\n      \"title\": \"Let It Bleed\",\n      \"author\": \"Ian Rankin\",\n      \"status\": \"published\",\n      \"price\": 3000,\n      \"stock\": 5\n    },\n    {\n      \"id\": 2,\n      \"title\": \"Draft Book\",\n      \"author\": \"New Author\",\n      \"status\": \"draft\",\n      \"price\": 4000,\n      \"stock\": 0\n    }\n  ],\n  \"page\": 1,\n  \"limit\": 12,\n  \"total\": 2\n}"
+						}
+					]
 				},
 				{
 					"name": "Lookup Book Metadata",
@@ -177,10 +430,33 @@
 							"host": ["{{base_url}}"],
 							"path": ["admin", "books", "lookup"],
 							"query": [
-								{ "key": "q", "value": "9780752877198" }
+								{ "key": "q", "value": "9780752877198", "description": "Title or ISBN" }
 							]
 						}
-					}
+					},
+					"response": [
+						{
+							"name": "Lookup Book - Success",
+							"originalRequest": {
+								"method": "GET",
+								"header": [
+									{ "key": "Authorization", "value": "Bearer {{admin_token}}" }
+								],
+								"url": {
+									"raw": "{{base_url}}/admin/books/lookup?q=9780752877198",
+									"host": ["{{base_url}}"],
+									"path": ["admin", "books", "lookup"]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{ "key": "Content-Type", "value": "application/json; charset=utf-8" }
+							],
+							"body": "{\n  \"data\": [\n    {\n      \"title\": \"Let It Bleed\",\n      \"author\": \"Ian Rankin\",\n      \"description\": \"Detective Inspector John Rebus investigates...\",\n      \"image_url\": \"https://covers.openlibrary.org/b/isbn/9780752877198-L.jpg\",\n      \"suggested_tags\": [\"Crime\", \"Mystery\", \"Fiction\"]\n    }\n  ]\n}"
+						}
+					]
 				},
 				{
 					"name": "Create Book",
@@ -199,7 +475,35 @@
 							"host": ["{{base_url}}"],
 							"path": ["admin", "books"]
 						}
-					}
+					},
+					"response": [
+						{
+							"name": "Create Book - Success",
+							"originalRequest": {
+								"method": "POST",
+								"header": [
+									{ "key": "Authorization", "value": "Bearer {{admin_token}}" },
+									{ "key": "Content-Type", "value": "application/json" }
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"title\": \"Atomic Habits\",\n  \"author\": \"James Clear\",\n  \"description\": \"An easy and proven way to build good habits and break bad ones.\",\n  \"price\": 5000,\n  \"stock\": 10,\n  \"image_url\": \"https://images.example.com/cover.jpg\",\n  \"status\": \"published\",\n  \"tag_ids\": [1, 2]\n}"
+								},
+								"url": {
+									"raw": "{{base_url}}/admin/books",
+									"host": ["{{base_url}}"],
+									"path": ["admin", "books"]
+								}
+							},
+							"status": "Created",
+							"code": 201,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{ "key": "Content-Type", "value": "application/json; charset=utf-8" }
+							],
+							"body": "{\n  \"data\": {\n    \"id\": 3,\n    \"title\": \"Atomic Habits\",\n    \"author\": \"James Clear\",\n    \"description\": \"An easy and proven way to build good habits and break bad ones.\",\n    \"price\": 5000,\n    \"stock\": 10,\n    \"image_url\": \"https://images.example.com/cover.jpg\",\n    \"status\": \"published\",\n    \"tags\": [\n      { \"id\": 1, \"name\": \"Crime\" },\n      { \"id\": 2, \"name\": \"Mystery\" }\n    ]\n  }\n}"
+						}
+					]
 				},
 				{
 					"name": "Update Book",
@@ -218,7 +522,30 @@
 							"host": ["{{base_url}}"],
 							"path": ["admin", "books", "1"]
 						}
-					}
+					},
+					"response": [
+						{
+							"name": "Update Book - Success",
+							"originalRequest": {
+								"method": "PUT",
+								"header": [
+									{ "key": "Authorization", "value": "Bearer {{admin_token}}" }
+								],
+								"url": {
+									"raw": "{{base_url}}/admin/books/1",
+									"host": ["{{base_url}}"],
+									"path": ["admin", "books", "1"]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{ "key": "Content-Type", "value": "application/json; charset=utf-8" }
+							],
+							"body": "{\n  \"data\": {\n    \"id\": 1,\n    \"title\": \"Atomic Habits (Updated Edition)\",\n    \"price\": 5500,\n    \"stock\": 12,\n    \"status\": \"published\"\n  }\n}"
+						}
+					]
 				},
 				{
 					"name": "Toggle Book Status",
@@ -237,7 +564,30 @@
 							"host": ["{{base_url}}"],
 							"path": ["admin", "books", "1", "status"]
 						}
-					}
+					},
+					"response": [
+						{
+							"name": "Toggle Status - Success",
+							"originalRequest": {
+								"method": "PATCH",
+								"header": [
+									{ "key": "Authorization", "value": "Bearer {{admin_token}}" }
+								],
+								"url": {
+									"raw": "{{base_url}}/admin/books/1/status",
+									"host": ["{{base_url}}"],
+									"path": ["admin", "books", "1", "status"]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{ "key": "Content-Type", "value": "application/json; charset=utf-8" }
+							],
+							"body": "{\n  \"message\": \"Book status updated successfully\"\n}"
+						}
+					]
 				},
 				{
 					"name": "Delete Book",
@@ -251,7 +601,30 @@
 							"host": ["{{base_url}}"],
 							"path": ["admin", "books", "1"]
 						}
-					}
+					},
+					"response": [
+						{
+							"name": "Delete Book - Success",
+							"originalRequest": {
+								"method": "DELETE",
+								"header": [
+									{ "key": "Authorization", "value": "Bearer {{admin_token}}" }
+								],
+								"url": {
+									"raw": "{{base_url}}/admin/books/1",
+									"host": ["{{base_url}}"],
+									"path": ["admin", "books", "1"]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{ "key": "Content-Type", "value": "application/json; charset=utf-8" }
+							],
+							"body": "{\n  \"message\": \"Book deleted successfully\"\n}"
+						}
+					]
 				},
 				{
 					"name": "Create Tag",
@@ -270,7 +643,30 @@
 							"host": ["{{base_url}}"],
 							"path": ["admin", "tags"]
 						}
-					}
+					},
+					"response": [
+						{
+							"name": "Create Tag - Success",
+							"originalRequest": {
+								"method": "POST",
+								"header": [
+									{ "key": "Authorization", "value": "Bearer {{admin_token}}" }
+								],
+								"url": {
+									"raw": "{{base_url}}/admin/tags",
+									"host": ["{{base_url}}"],
+									"path": ["admin", "tags"]
+								}
+							},
+							"status": "Created",
+							"code": 201,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{ "key": "Content-Type", "value": "application/json; charset=utf-8" }
+							],
+							"body": "{\n  \"data\": {\n    \"id\": 4,\n    \"name\": \"Psychology\"\n  }\n}"
+						}
+					]
 				},
 				{
 					"name": "Replace Book Tags",
@@ -289,7 +685,30 @@
 							"host": ["{{base_url}}"],
 							"path": ["admin", "books", "1", "tags"]
 						}
-					}
+					},
+					"response": [
+						{
+							"name": "Replace Book Tags - Success",
+							"originalRequest": {
+								"method": "PUT",
+								"header": [
+									{ "key": "Authorization", "value": "Bearer {{admin_token}}" }
+								],
+								"url": {
+									"raw": "{{base_url}}/admin/books/1/tags",
+									"host": ["{{base_url}}"],
+									"path": ["admin", "books", "1", "tags"]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{ "key": "Content-Type", "value": "application/json; charset=utf-8" }
+							],
+							"body": "{\n  \"message\": \"Book tags updated successfully\"\n}"
+						}
+					]
 				}
 			]
 		}
