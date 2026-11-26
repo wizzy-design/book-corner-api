@@ -9,6 +9,7 @@ import (
 	"github.com/wizzy-design/book-corner-api/internal/database"
 	"github.com/wizzy-design/book-corner-api/internal/handlers"
 	"github.com/wizzy-design/book-corner-api/internal/middleware"
+	"github.com/wizzy-design/book-corner-api/internal/paystack"
 	"github.com/wizzy-design/book-corner-api/migrations"
 )
 
@@ -38,6 +39,8 @@ func main() {
 		log.Fatal("Failed to run database migrations:", err)
 	}
 
+	paystackClient := paystack.NewClient(cfg.PaystackSecretKey)
+	
 	// Start http server
 	var router *gin.Engine = gin.Default()
 	router.SetTrustedProxies(nil)
@@ -52,7 +55,7 @@ func main() {
 	router.GET("/tags", handlers.GetTagsHandler(pool))
 	router.GET("/quiz/questions", handlers.GetQuizQuestionsHandler(pool))
 	router.POST("/quiz/recommend", handlers.RecommendBooksHandler(pool))
-	router.POST("/orders", handlers.CreateOrderHandler(pool))
+	router.POST("/orders", handlers.CreateOrderHandler(pool, paystackClient))
 
 	// Protected admin routes
 	admin := router.Group("/admin")

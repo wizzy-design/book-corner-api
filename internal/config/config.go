@@ -12,6 +12,7 @@ type Config struct {
 	DatabaseURL string
 	Port        string
 	JWTSecret   string
+	PaystackSecretKey   string
 	UploadDir string
 	AllowedOrigin string
 }
@@ -27,6 +28,7 @@ func Load() (*Config, error) {
 		DatabaseURL: os.Getenv("DATABASE_URL"),
 		Port: os.Getenv("PORT"),
 		JWTSecret: os.Getenv("JWT_SECRET"),
+		PaystackSecretKey: os.Getenv("PAYSTACK_SECRET_KEY"),
 		UploadDir: os.Getenv("UPLOAD_DIR"),
 		AllowedOrigin: os.Getenv("ALLOWED_ORIGIN"),
 	}
@@ -37,6 +39,10 @@ func Load() (*Config, error) {
 
 	if config.JWTSecret == "" {
 		return nil, fmt.Errorf("JWT_SECRET environment variable is required")
+	}
+	
+	if config.PaystackSecretKey == "" {
+		return nil, fmt.Errorf("PAYSTACK_SECRET_KEY environment variable is required")
 	}
 
 	return config, nil
